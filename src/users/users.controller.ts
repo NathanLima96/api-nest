@@ -3,15 +3,17 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
+  Request,
   Delete,
   UsePipes,
   ValidationPipe,
+  UseGuards,
+  Put,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUsersDto } from './dto/create-user.dto';
 import { UpdateUsersDto } from './dto/update-user.dto';
+import { AuthGuard } from '../auth/auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -28,19 +30,31 @@ export class UsersController {
     return this.userService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
+  @Get('me')
+  @UseGuards(AuthGuard)
+  async getProfile(@Request() req) {
+    const user = await this.userService.findOne(req.user.id);
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      city: user.city,
+      phone: user.phone,
+      cep: user.cep,
+      dateOfBirth: user.dateOfBirth,
+    };
   }
 
-  @Patch(':id')
+  @Put()
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUsersDto) {
-    return this.userService.update(+id, updateUserDto);
+  update(@Request() req, @Body() updateUserDto: UpdateUsersDto) {
+    return this.userService.update(req.user.id, updateUserDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+  @Delete()
+  @UseGuards(AuthGuard)
+  remove(@Request() req) {
+    return this.userService.remove(req.user.id);
   }
 }
